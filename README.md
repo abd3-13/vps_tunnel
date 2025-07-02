@@ -21,7 +21,7 @@ A Bash script that automatically discovers open TCP ports on your local machine 
 - `autossh`
 - `ss` (usually part of `iproute2`)
 - `awk`, `sed`, `sort`, `uniq`
-- `GatewayPorts clientspecified` In /etc/ssh/sshd_config
+- `GatewayPorts clientspecified` In /etc/ssh/sshd_config on the remote vps
 
 ---
 
