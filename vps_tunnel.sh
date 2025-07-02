@@ -16,7 +16,11 @@ command -v read >/dev/null 2>&1 || {
     echo "❌ read is not installed. Please install it first."
     exit 1
 }
-[ -d $HOME/.config ]; { echo "❌  $HOME/.config dir not found. Creating..."; mkdir -p $HOME/.config; }
+
+if [ ! -d "$HOME/.config" ]; then
+    echo "❌  $HOME/.config dir not found. Creating..."
+    mkdir -p "$HOME/.config"
+fi
 
 ### --- CONFIG --- ###
 DEVICE_IP_SUFFIX="58"
