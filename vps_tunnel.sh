@@ -1,4 +1,6 @@
 #!/bin/bash
+
+
 # Prechecks
 command -v autossh >/dev/null 2>&1 || {
     echo "❌ autossh is not installed. Please install it first."
@@ -32,7 +34,7 @@ DRY_RUN=false
 NON_INTERACTIVE=false
 REMOTE_OPTS="-o ServerAliveInterval=10 -o ServerAliveCountMax=3"
 
-pgrep -af "autossh -p [0-9]+ -M 0 -N $REMOTE_OPTS -R 127.0.0" | awk '{print $1}' | xargs kill
+pgrep -af "autossh -p [0-9]+ -M 0 -N $REMOTE_OPTS -R 127.0.0" | awk '{print $1}' | xargs kill 2>/dev/null
 
 # Help message function
 show_help() {
@@ -52,9 +54,26 @@ Options:
 
 Example:
   ${0##*/} -u root -h 146.234.156.34 -p 34898 -d 59 -c ~/.config/vps_exclude.conf
-  
+
 EOF
 exit 0
+}
+
+check_ports_alive() {
+    echo -n -e "🧟  Checking for zombie docker ports(might take a while)... "
+    local -n ports=$1
+    local -n xports=$2  # Pass this in explicitly!
+
+    for line in "${ports[@]}"; do
+        port=$(awk '{print $1}' <<< "$line")
+        proc=$(awk '{print $2}' <<< "$line")
+
+        [[ $proc == "docker-proxy" ]] || continue
+
+        if ! curl -s --max-time 2 --head "http://127.0.0.1:$port" | grep -q "^HTTP/[12].[01] [23].."; then
+            xports+=("$port")
+        fi
+    done
 }
 
 # Argument handler 
@@ -115,16 +134,19 @@ fi
 echo "📡 Discovering open TCP ports and associated processes..."
 
 # Get list of ports with associated PID/command
-mapfile -t port_lines < <(ss -4tlnpH | awk '{print $4, $NF}' | sed 's/),(.*))/))/g; s/users:.."\(.*\)".*/\1/g; s/[0-9\.\*]\+://g' | sort -n -u)
+mapfile -t port_lines < <(ss -tlnpH | awk '{print $4, $NF}' | sed 's/),(.*))/))/g; s/users:.."\(.*\)".*/\1/g; s/[0-9\.\*]\+://g' | sort -n -u)
 
 if [ ${#port_lines[@]} -eq 0 ]; then
     echo "❌ No ports discovered — check 'ss' or permissions."
     exit 1
 fi
 
+echo -e "🔍 Found services: ${#port_lines[@]}  "
 
+#remove zombie ports
+check_ports_alive port_lines exclude_ports
 
-echo -e "🔍 Found services:"
+echo -e "🔍 Excluded : ${#exclude_ports[@]} "
 
 # Collect entries
 entries=()
@@ -175,7 +197,7 @@ if ! $NON_INTERACTIVE; then
     exclude_ports+=("${exclude_input[@]}")
     exclude_ports=($(printf "%s\n" "${exclude_ports[@]}" | sort -n | uniq))
     
-    ### --- SAVE FOR NEXT RUN --- ###
+    # SAVE FOR NEXT
     read -p "💾 Save these exclusions for next time? (y/n): " save
     if [[ "$save" == "y" ]]; then
         printf "%s\n" "${exclude_ports[@]}" > "$EX_PORTS_CNF"
@@ -202,7 +224,8 @@ for line in "${port_lines[@]}"; do
 
     # Check if the port is already used on VPS
     if [[ " ${vps_used_ports[*]} " =~ " $port " ]]; then
-        nport="${DEVICE_IP_SUFFIX}${port}"
+        OFFSET=$(( DEVICE_IP_SUFFIX * 1000 ))
+        nport=$(( OFFSET + port ))
         CANG_PORTS+="$port→$nport, "
     else
         nport="$port"
