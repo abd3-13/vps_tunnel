@@ -1,5 +1,12 @@
 # 🔌 vps_tunnel.sh
 
+![Shell Script](https://img.shields.io/badge/language-bash-blue.svg)
+![License](https://img.shields.io/github/license/abd3-13/vps_tunnel)
+![Last Commit](https://img.shields.io/github/last-commit/abd3-13/vps_tunnel)
+![Issues](https://img.shields.io/github/issues/abd3-13/vps_tunnel)
+![Stars](https://img.shields.io/github/stars/abd3-13/vps_tunnel?style=social)
+
+
 A Bash script that automatically discovers open TCP ports on your local machine and tunnels them securely to a VPS using `autossh`. Ideal for **homelab** setups with limited access due to CGNAT, where incoming connections from the VPS side are impossible.
 
 ---
