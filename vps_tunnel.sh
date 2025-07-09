@@ -9,7 +9,7 @@ SSH_PORT="22"
 DRY_RUN=false
 NON_INTERACTIVE=false
 REMOTE_OPTS="-4 -o ServerAliveInterval=10 -o ServerAliveCountMax=3"
-
+LOG_FILE="/var/log/vps_tunnel.log"
 
 prechecks() {
     for cmd in autossh sed ss awk sort uniq read ssh cat curl while mapfile printf echo; do
@@ -286,5 +286,5 @@ fi
 
 #terminate previous instances if not on dry run
 pgrep -af "autossh -p $SSH_PORT -M 0 -N $REMOTE_OPTS -R 127.0.0" | awk '{print $1}' | xargs kill 2>/dev/null
-exec autossh -p "$SSH_PORT" -M 0 -N $REMOTE_OPTS ${VPS_USER}@${VPS_HOST} &
+exec autossh -p "$SSH_PORT" -M 0 -N $REMOTE_OPTS ${VPS_USER}@${VPS_HOST} & >> "$LOG_FILE" 2>&1
 echo "$!" > "/tmp/vps_tunnel_${DEVICE_IP_SUFFIX}-$!.pid"
